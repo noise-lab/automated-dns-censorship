@@ -1,1 +1,1 @@
-# trial-repo
+# Automated DNS Censorship
