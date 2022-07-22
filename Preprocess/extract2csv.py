@@ -100,7 +100,7 @@ def combine_data_by_day(day, country):
         df.to_csv("/data/censorship/OONI/T/"+day+"/"+country+"/combined.csv")
         return df
     return None
-dates = generate_dates('2017-02-11','2017-03-14') #### changing this date range
+dates = generate_dates('2021-07-01','2022-02-09') #### changing this date range
   
 country = "CN"
 ls = []
