@@ -89,16 +89,6 @@ for date in dates:
         
         ls.append(df)
 China_combined = pd.concat(ls)
-dates = generate_dates('2021-07-01','2022-02-09')
-
-columns_selected_test = ["input",'measurement_start_time',
-       'probe_asn','probe_network_name',
-       'resolver_asn','resolver_network_name','test_runtime',
-       'test_start_time', 'dns_experiment_failure', 'dns_consistency',
-       'control_failure', 'http_experiment_failure', 'body_length_match',
-       'body_proportion', 'status_code_match', 'headers_match', 'title_match',
-       'accessible', 'blocking', 'x_status', 'test_keys_asn',
-       'test_keys_as_org_name', 'test_keys_ipv4']
 country = "US"
 ls=[]
 for date in dates:
@@ -112,12 +102,12 @@ for date in dates:
         ls.append(df)
 US_combined = pd.concat(ls)
 
-benchmark = datetime.datetime(2021,6,20)
-upper_benchmark = datetime.datetime(2021,7,1)
-difference = upper_benchmark-benchmark
-difference_in_s = difference.total_seconds()
-# ### making the data start from 2021, July,1
-China_combined=China_combined[China_combined["measurement_start_time"]>difference_in_s]
+# benchmark = datetime.datetime(2021,6,20)
+# upper_benchmark = datetime.datetime(2021,7,1)
+# difference = upper_benchmark-benchmark
+# difference_in_s = difference.total_seconds()
+# # ### making the data start from 2021, July,1
+# China_combined=China_combined[China_combined["measurement_start_time"]>difference_in_s]
 print(China_combined.shape)
 China.combined("raw_CN.csv")
 import numpy as np
