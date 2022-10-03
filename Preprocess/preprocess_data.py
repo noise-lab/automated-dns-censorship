@@ -1,6 +1,7 @@
 import json
 import csv
 import pandas as pd
+import gzip
 import glob
 import os
 import datetime
@@ -8,18 +9,77 @@ import random
 import copy
 import pickle
 from sklearn.model_selection import train_test_split
-# from pyod.models.iforest import IForest
-from joblib import dump, load
+import numpy as np
 
-def add_zeros(string, string_length):
-    padd_num = string_length - len(string)
 
-    return "0"*padd_num+string
-        
-    
+main_cols = ['input', 'measurement_start_time', 'probe_asn', 'probe_cc', 'probe_ip','probe_network_name','resolver_asn', "report_id","resolver_asn",'resolver_ip', 'resolver_network_name', "solftware_name",
+'test_name', 'test_runtime', 'test_start_time']
+
+special = {'test_keys':["dns_experiment_failure","dns_consistency","control_failure","http_experiment_failure","body_length_match","body_proportion","status_code_match","headers_match","title_match","accessible","blocking","x_status"]}
+
+special_special = {'test_keys':{"queries":{"answers":["asn","as_org_name", "ipv4"]}}}
+
+df_columns = main_cols.copy()
+df_columns = df_columns+special['test_keys']
+df_columns = df_columns+ ["test_keys_" + i for i in special_special['test_keys']["queries"]["answers"]]
+
+def process_string(string):
+    return [int(i) for i in list(string)]
 def generate_dates(start_date, end_date):
     lst =  pd.date_range(start_date, end_date, freq='D')
     
+    list_date = []
+    for i in range(len(lst)):
+        list_date.append(lst[i].date().strftime("%Y-%m-%d"))
+    return list_date
+def replace_nan(df, column):
+    new_labels = []
+    for val in df[column]:
+        if pd.isna(val):
+            new_labels.append("")
+        else:
+            new_labels.append(val)
+    df[column]=new_labels
+    return df
+def get_domainname(name):
+    new_name = name.split("//")[-1]
+#     if new_name[:4]=="www.":
+#         new_name = new_name[4:]
+    if "/" in new_name:
+        new_name = new_name.split("/")[0]
+    return new_name
+
+def relabel(df, col_name, base_cat):
+    new_label = []
+    for i in df[col_name]:
+        if i==base_cat:
+            new_label.append(0)
+        else:
+            new_label.append(1)
+    df[col_name]=new_label
+    return df
+def replace_nan(df, column):
+    new_labels = []
+    for val in df[column]:
+        if pd.isna(val):
+            new_labels.append("")
+        else:
+            new_labels.append(val)
+    df[column]=new_labels
+    return df
+
+
+
+
+
+
+
+###### Preprocess the data
+def add_zeros(string, string_length):
+    padd_num = string_length - len(string)
+    return "0"*padd_num+string
+def generate_dates(start_date, end_date):
+    lst =  pd.date_range(start_date, end_date, freq='D')
     list_date = []
     for i in range(len(lst)):
         list_date.append(lst[i].date().strftime("%Y-%m-%d"))
@@ -34,8 +94,7 @@ def findNaN(df, column):
     return nan_rows
 def convert_measurement_starttime(time):
     converted_datetime = pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S')
-  
-    benchmark = datetime.datetime(2021,6,20)
+    benchmark = datetime.datetime(2021,7,1)
     difference = converted_datetime-benchmark
     return difference.total_seconds()
 
@@ -65,108 +124,133 @@ def replace_nan(df, column):
             new_labels.append("")
         else:
             new_labels.append(val)
-    df[column]=new_l
-    
-dates = generate_dates('2021-07-01','2022-02-09')
-columns_selected_test = ["input",'measurement_start_time',
-       'probe_asn','probe_network_name',
-       'resolver_asn','resolver_network_name','test_runtime',
-       'test_start_time', 'dns_experiment_failure', 'dns_consistency',
-       'control_failure', 'http_experiment_failure', 'body_length_match',
-       'body_proportion', 'status_code_match', 'headers_match', 'title_match',
-       'accessible', 'blocking', 'x_status', 'test_keys_asn',
-       'test_keys_as_org_name', 'test_keys_ipv4',"GFWatchblocking_truth"]
-country = "CN"
-ls=[]
-for date in dates:
-    print(date)
-    filename = "/data/censorship/OONI/"+date+"/"+country+"/groundtruth_combined.csv"
-    if os.path.exists(filename):
-        df = pd.read_csv(filename)
-        df=df[columns_selected_test]
-        df["measurement_start_time"] = [convert_measurement_starttime(time) for time in df["measurement_start_time"]]
-        df["test_start_time"] = [convert_measurement_starttime(time) for time in df["test_start_time"]]
-        
-        ls.append(df)
-China_combined = pd.concat(ls)
-country = "US"
-ls=[]
-for date in dates:
-    print(date)
-    filename = "/data/censorship/OONI/"+date+"/"+country+"/combined.csv"
-    if os.path.exists(filename):
-        df = pd.read_csv(filename)
-        df=df[columns_selected_test]
-        df["measurement_start_time"] = [convert_measurement_starttime(time) for time in df["measurement_start_time"]]
-        df["test_start_time"] = [convert_measurement_starttime(time) for time in df["test_start_time"]]
-        ls.append(df)
-US_combined = pd.concat(ls)
+    df[column]=new_labels
+    return df
 
-# benchmark = datetime.datetime(2021,6,20)
-# upper_benchmark = datetime.datetime(2021,7,1)
-# difference = upper_benchmark-benchmark
-# difference_in_s = difference.total_seconds()
-# # ### making the data start from 2021, July,1
-# China_combined=China_combined[China_combined["measurement_start_time"]>difference_in_s]
-print(China_combined.shape)
-China.combined("raw_CN.csv")
-import numpy as np
-### Adding groundtruth for the US
+
+
+##### Loading data
+
+
+US = pd.read_csv("./data/V1/US_v1.csv") 
+US["Index"] = [i for i in range(US.shape[0])]
+print(US.columns)
+
+
+
+dates = generate_dates('2021-07-01','2022-02-09')
+country = "CN"
+ls = []
+count = 0
+for date in dates:
+    filename = "/data/censorship/OONI/"+date+"/"+country+"/groundtruth_combined_new.csv"
+    if os.path.exists(filename):
+        count +=1
+        df = pd.read_csv(filename)
+        ls.append(df)
+CN = pd.concat(ls)
+CN["Index"]=[i for i in range(CN.shape[0])]
+CN = replace_nan(CN,"blocking")
+CN.to_csv("./data/CN_v1.csv")
+
+
+
+CN["measurement_start_time"] = [convert_measurement_starttime(time) for time in 
+CN["test_start_time"] = [convert_measurement_starttime(time) for time in CN["test_start_time"]]
+
+
+
+
+######## Sanitizing the dataset #######
+
+#### removing rows that do not pass control test
+US = replace_nan(US,"control_failure")
+US = US[US["control_failure"]==""]
+
+CN = replace_nan(CN,"control_failure")
+CN = CN[CN["control_failure"]==""]
+
+### removing the samples where probe_asn cannot be determined
+CN = replace_nan(CN,"probe_asn")
+CN = CN[CN["probe_asn"]!=""]
+
+### removing the samples where probe_asn cannot be determined
+US = replace_nan(US,"probe_asn")
+US = US[US["probe_asn"]!=""]
+
+### removing the samples where resolver_asn cannot be determined
+US= replace_nan(US,"resolver_asn")
+US = US[US["resolver_asn"]!=""]
+US = US[US["resolver_asn"]!="AS0"]
+
+CN = replace_nan(CN,"resolver_asn")
+CN = CN[CN["resolver_asn"]!="AS0"]
+CN = CN[CN["resolver_asn"]!=""]
+
+### removing the samples where test_keys cannot be determined
+US = replace_nan(US,"test_keys_asn")
+US = US[US["test_keys_asn"]!=""]
+US = US[US["test_keys_asn"]!="AS0"]
+
+CN = replace_nan(CN,"test_keys_asn")
+CN = CN[CN["test_keys_asn"]!="AS0"]
+CN = CN[CN["test_keys_asn"]!=""]
+
+
+### removing the samples where body_proportion cannot be determined
+US = replace_nan(US,"body_proportion")
+US = US[US["body_proportion"]!=""]
+
+CN = replace_nan(CN,"body_proportion")
+CN = CN[CN["body_proportion"]!=""]
+
+
+
+CN = replace_nan(CN,"blocking")
+CN = replace_nan(CN,"GFWatchblocking_truth_new")
+CN = pd.concat([CN[CN["blocking"]=='False'],CN[CN["blocking"]=='dns']])
+CN = pd.concat([CN[CN["GFWatchblocking_truth_new"]==''],CN[CN["GFWatchblocking_truth_new"]=='Confirmed']])
+
+
 GFWatchblocking_truth = []
-for i in US_combined['dns_consistency']:
+for i in US['dns_consistency']:
     if i=="consistent":
         GFWatchblocking_truth.append(np.nan)
     else:
         GFWatchblocking_truth.append("Possible")
+US["GFWatchblocking_truth_new"]= GFWatchblocking_truth
+US = replace_nan(US,"blocking")
+US = replace_nan(US,"GFWatchblocking_truth_new")
+US = US[US["blocking"]=='False']
+US = US[US["GFWatchblocking_truth_new"]=='']
 
 
-US_combined["GFWatchblocking_truth"]= GFWatchblocking_truth
-##### Process US and CN data together
+US.to_csv("./data/US_v2_sanitized.csv")
+CN.to_csv("./data/CN_v2_sanitized.csv")
 
-#### removing rows that do not pass control test
-US_combined = replace_nan(US_combined,"control_failure")
-US_combined = US_combined[US_combined["control_failure"]==""]
 
-China_combined = replace_nan(China_combined,"control_failure")
-China_combined = China_combined[China_combined["control_failure"]==""]
-### removing the samples where probe_asn cannot be determined
-China_combined = replace_nan(China_combined,"probe_asn")
-China_combined = China_combined[China_combined["probe_asn"]!=""]
+US_sample = US.sample(frac=0.025, replace=True, random_state=1)
+US_sample.to_csv("./data/US_v2_sanitized_sample.csv")
 
-### removing the samples where probe_asn cannot be determined
-US_combined = replace_nan(US_combined,"probe_asn")
-US_combined = US_combined[US_combined["probe_asn"]!=""]
-### removing the samples where resolver_asn cannot be determined
-# US_combined = replace_nan(US_combined,"resolver_asn")
-US_combined = US_combined[US_combined["resolver_asn"]!=""]
-US_combined = US_combined[US_combined["resolver_asn"]!="AS0"]
+columns_selected_test = ["Index","input","Domain",'measurement_start_time',"control_failure",
+       'probe_asn','probe_network_name',
+       'resolver_asn','resolver_network_name','test_runtime',
+       'test_start_time', 'dns_experiment_failure', 'dns_consistency',
+        'http_experiment_failure', 'body_length_match',
+       'body_proportion', 'status_code_match', 'headers_match', 'title_match',
+        'blocking',  'test_keys_asn',
+       'test_keys_as_org_name', "GFWatchblocking_truth_new","test_keys_ipv4" ]
+CN = CN[columns_selected_test]
+US_sample["Domain"] = [get_domainname(i) for i in US_sample["input"]]
+US_sample = US_sample[columns_selected_test]
 
-China_combined = replace_nan(China_combined,"resolver_asn")
-China_combined = China_combined[China_combined["resolver_asn"]!="AS0"]
-China_combined = China_combined[China_combined["resolver_asn"]!=""]
-### removing the samples where test_keys cannot be determined
 
-US_combined = replace_nan(US_combined,"test_keys_asn")
-US_combined = US_combined[US_combined["test_keys_asn"]!=""]
-US_combined = US_combined[US_combined["test_keys_asn"]!="AS0"]
 
-China_combined = replace_nan(China_combined,"test_keys_asn")
-China_combined = China_combined[China_combined["test_keys_asn"]!="AS0"]
-China_combined = China_combined[China_combined["test_keys_asn"]!=""]
-### Getting the size of the US and China data
+######### Processing the dataframes
 
-china_size = China_combined.shape[0]
-us_size = US_combined.shape[0]
-
-US_combined = replace_nan(US_combined,"body_proportion")
-China_combined = replace_nan(China_combined,"body_proportion")
-US_combined = US_combined[US_combined["body_proportion"]!= ""]
-China_combined = China_combined[China_combined["body_proportion"]!= ""]
-print(china_size)
-print(us_size)
-combined_uschina = pd.concat([China_combined,US_combined])
+combined_USCN = pd.concat([CN,US_sample])
 http_failure = []
-for error in combined_uschina["http_experiment_failure"]:
+for error in combined_USCN["http_experiment_failure"]:
     if not pd.isna(error):
         if "unknown_failure" in error:
             http_failure.append(error.split(":")[-1].strip())
@@ -175,12 +259,10 @@ for error in combined_uschina["http_experiment_failure"]:
     else:
         http_failure.append("")
 
-combined_uschina["http_experiment_failure"] = http_failure
-# combined, labels_combined = relabel_category(combined,"http_experiment_failure")
-# for name in labels_combined["Old label"]:
-#     print(name)
+combined_USCN["http_experiment_failure"] = http_failure
+
 dns_failure = []
-for error in combined_uschina["dns_experiment_failure"]:
+for error in combined_USCN["dns_experiment_failure"]:
     if not pd.isna(error):
         if "unknown_failure" in error:
             dns_failure.append(error.split(":")[-1].strip())
@@ -189,116 +271,72 @@ for error in combined_uschina["dns_experiment_failure"]:
     else:
         dns_failure.append("")
 
-combined_uschina["dns_experiment_failure"] = dns_failure
-# combined, labels_combined = relabel_category(combined,"dns_experiment_failure")
-# for name in labels_combined["Old label"]:
-#     print(name)
-China_combined = combined_uschina.iloc[:china_size,:]
-US_combined = combined_uschina.iloc[china_size:,:]
-US_combined.to_csv("US_temp.csv")
-China_combined.to_csv("CN_temp.csv")
-combined_uschina = pd.concat([China_combined,US_combined])
+combined_USCN["dns_experiment_failure"] = dns_failure
+
+CN = combined_USCN.iloc[:CN.shape[0],:]
+US = combined_USCN.iloc[CN.shape[0]:,:]
+US.to_csv("US_v3_sampled.csv")
+CN.to_csv("CN_v3.csv")
+
 relabels_dict = {}
-columns_need_relabeling = ["probe_network_name","probe_asn","resolver_asn","resolver_network_name","status_code_match","status_code_match","headers_match",
+columns_need_relabeling = ["probe_network_name","probe_asn","resolver_asn","resolver_network_name","status_code_match","headers_match",
                           "title_match","body_length_match","test_keys_asn","test_keys_as_org_name","dns_consistency", "dns_experiment_failure","http_experiment_failure"]
 
 for col in columns_need_relabeling:
-    print(col)
-    combined_uschina, labels_combined = relabel_category(combined_uschina,col)
+    combined_USCN, labels_combined = relabel_category(combined_USCN,col)
     relabels_dict[col]=labels_combined
-
-    
-
-ML_runs_modelsChina_combined = combined_uschina.iloc[:china_size,:]
-US_combined = combined_uschina.iloc[china_size:,:]
-US_combined.to_csv("./US_temp.csv")
-China_combined.to_csv("./CN_temp.csv")
 for k in relabels_dict.keys():
     df = relabels_dict[k]
-    df.to_csv("../Re_labeling/"+k+".csv")
-##### Applying one-hot-encoding
-def process_string(string):
-    return [int(i) for i in list(string)]
+    df.to_csv("./data/Labels/"+k+".csv")
 
+    
 continuous_variables = ['test_runtime','measurement_start_time','test_start_time','body_proportion']
-labels = ["blocking","GFWatchblocking_truth"]
+labels = ["blocking","GFWatchblocking_truth_new","input","Domain","Index"]
 cat_features = ['probe_asn','probe_network_name','resolver_network_name','resolver_asn','dns_experiment_failure','dns_consistency','http_experiment_failure','body_length_match','status_code_match','headers_match','title_match','test_keys_asn', 'test_keys_as_org_name']
-# df = pd.DataFrame()
-# for feature in cat_features:
-#     print(feature)
-#     uniques_val = len(combined_uschina[feature].unique())
-#     if uniques_val>2:
-#         cols_num = len("{0:b}".format(len(combined_uschina[feature].unique())))
-#         values = ["{0:b}".format(val) for val in combined_uschina[feature]]
-#         values = [add_zeros(val, cols_num) for val in values]
+
+
+
+df = pd.DataFrame()
+for feature in cat_features:
+    print(feature)
+#     print(combined_USCN[feature])
+    uniques_val = len(combined_USCN[feature].unique())
+    print(uniques_val)
+    if uniques_val>2:
+        cols_num = len("{0:b}".format(uniques_val))
+        values = ["{0:b}".format(val) for val in combined_USCN[feature]]### this is the values
+        values = [add_zeros(val, cols_num) for val in values]## this is the value after padding zeros
 
         
-#         columns = [feature + str(i) for i in range(cols_num)]
-#         vals_split = [process_string(string) for string in values]       
-#         for i in range(cols_num):
-#             df[columns[i]] = [val[i] for val in vals_split]
-#     else:
-#         df[feature]=df_combined[feature]
-# print(df.head())
+        columns = [feature + str(i) for i in range(cols_num)]
+        print(columns)
+#         vals_split = [list(string) for string in values]  
 
-# df_China_combined = df.iloc[:china_size,:]
-# df_US_combined = df.iloc[china_size:,:]
-# df_US_combined.to_csv("US_temp_encoded.csv")
-# df_China_combined.to_csv("CN_temp_encoded.csv")
-US_combined = pd.read_csv("US_temp_encoded.csv")
-CN_combined = pd.read_csv("CN_temp_encoded.csv")
-US = pd.read_csv("US_temp.csv")
-CN = pd.read_csv("CN_temp.csv")
-print(CN.columns)
-# print(US_combined.shape)
-# print(US_combined.head())
-labels = ["blocking","GFWatchblocking_truth","input"]
-continuous_variables = ['test_runtime','measurement_start_time','test_start_time','body_proportion']
+        for i in range(cols_num):
+            df[columns[i]] = [int(val[i]) for val in vals_split]
+    else:
+        df[feature]= list(combined_USCN[feature])
 
-print(US.columns)
-for feature in labels:
-#     df[feature]=df_combined[feature]
+for col in continuous_variables:
+    df[col] = list(combined_USCN[col])
+for col in labels:
+    df[col] = list(combined_USCN[col])
     
-    US_combined[feature] = US[feature]
-for feature in continuous_variables:
-#     df[feature]=df_combined[feature]
-    US_combined[feature] = US[feature] 
-print(US_combined.columns)
-# US_combined["input"] = US["input"]
+CN_encoded = df.iloc[:CN.shape[0],:]
+US_encoded = df.iloc[CN.shape[0]:,:]
+CN_encoded["blocking"]=[str(item) for item in CN_encoded["blocking"]]
+CN_encoded = replace_nan(CN_encoded,"GFWatchblocking_truth_new")
+CN_encoded = relabel(CN_encoded, "blocking","False")
+CN_encoded = relabel(CN_encoded, "GFWatchblocking_truth_new","")
+US_encoded["blocking"]=[str(item) for item in US_encoded["blocking"]]
+US_encoded = replace_nan(US_encoded,"GFWatchblocking_truth_new")
+US_encoded = relabel(US_encoded, "blocking","False")
+US_encoded = relabel(US_encoded, "GFWatchblocking_truth_new","")
+US_encoded.to_csv("US_v4_encoded.csv")
+CN_encoded.to_csv("CN_v4_encoded.csv")
 
-US_combined.to_csv("US_temp_encoded.csv")
-print(US_combined)
-# # print(df.columns)
-for feature in labels:
-#     df[feature]=df_combined[feature]
-    
-    CN_combined[feature] = CN[feature]
-for feature in continuous_variables:
-#     df[feature]=df_combined[feature]
-    CN_combined[feature] = CN[feature] 
-CN_combined["input"] = CN["input"]
-CN_combined.to_csv("CN_temp_encoded.csv")
-# print(df.columns)
-CN_combined = pd.read_csv("CN_temp_encoded.csv")
-print(CN_combined.head())
-CN_combined = replace_nan(CN_combined,"blocking")
-CN_combined = replace_nan(CN_combined,"GFWatchblocking_truth")
-CN_combined = pd.concat([CN_combined[CN_combined["blocking"]=='False'],CN_combined[CN_combined["blocking"]=='dns']])
 
-CN_combined = pd.concat([CN_combined[CN_combined["GFWatchblocking_truth"]==''],CN_combined[CN_combined["GFWatchblocking_truth"]=='Confirmed']])
 
-CN_combined.to_csv("CN_temp_encoded_sanitized.csv")
-CN_combined = pd.read_csv("CN_temp_encoded_sanitized.csv")
-US = pd.read_csv("US_temp_encoded.csv")
-US = replace_nan(US,"blocking")
-US = replace_nan(US,"GFWatchblocking_truth")
-# US = relabel(US, "blocking","False")
-# US = relabel(US, "GFWatchblocking_truth","")
-print(US["blocking"].unique())
-US = pd.concat([US[US["blocking"]=='False'],US[US["blocking"]=='dns']])
-print(US["blocking"].unique())
-US_sample = US.sample(frac=0.025, replace=True, random_state=1)
-print(US_sample.shape)
-US_sample = relabel(US_sample, "GFWatchblocking_truth","")
-US_sample = relabel(US_sample, "blocking","False")
-US_sample.to_csv("US_temp_encoded_sanitized_sampled.csv")
+
+
+
