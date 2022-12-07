@@ -9,7 +9,7 @@ home_folder_name = r"/home/jambrown/" # TODO change this to your home folder
 start_date = 20210630   # in the form of yyyymmdd, e.g., 20210101 # TODO change this to your preferred date
 data_dir = home_folder_name +r"CP_Downloads/"
 
-def main():
+def main(data_dir, start_date, end_date):
     fetched_files = set(os.listdir(data_dir))
 
     file_name_prefixes = ["CP_Satellite"]
@@ -24,7 +24,7 @@ def main():
             print(file_name)
             file_uploaded_date = file_name.split("-")[-6:-3]
             if file_name not in fetched_files and \
-                    int(start_date) <= int(''.join(file_uploaded_date)):
+                    int(start_date) <= int(''.join(file_uploaded_date)) <= int(end_date):
                 Popen("wget {0}{1} -P {2}; chown :cdac {1}".format(url, file_name, data_dir),
                       stdout=PIPE, shell=True).wait()
 
