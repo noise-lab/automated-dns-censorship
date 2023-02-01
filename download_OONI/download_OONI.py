@@ -20,12 +20,20 @@ def generate_dates(start_date, end_date):
         list_date.append(lst[i].date().strftime("%Y-%m-%d"))
     return list_date
 
+
+
+
+####################### TODO    #####################
+
+
 hours = generate_hours()
-countries = ['TM']
-dates = generate_dates('2017-02-11','2021-06-19')
+countries = ['CN']  # specify the country herrer
+dates = generate_dates('2017-02-11','2021-06-19') # specify the date herer
+os.chdir('/data/censorship/OONI/T/')# specify the directory to store here
+##################################################
 
 
-os.chdir('/data/censorship/OONI/T/')
+
 for date in dates:
     if not os.path.isdir("{}/raw_data/{}".format(os.getcwd(), date)):
         cmd = "mkdir {0};".format(date.replace('-',''))
