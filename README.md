@@ -2,26 +2,21 @@
 # DNS Censorship Detection with OONI
 
 ## Introduction
+This prroject try to use ML to detect censorship. This part of the process focus on using the measurements data frrom [OONI](https://ooni.org/post/mining-ooni-data), a platform that measure censorship by relying on volunteers located at differrent ventage points to run the probes. The 2 countrries that we investigate censorship for this prrroject is China (CN) and United States (US) during the period from 2021-07-01 to 2022-02-09 (inclusive). 
 
-The data used in this project is taken from [OONI](https://ooni.org/post/mining-ooni-data).
-We ingested probes ranging from 2021-07-01 to 2022-02-09 (inclusive). 
+The project is a pipeline that is divided into different stages, organized into different folders. In order to modify the code, please modify the code in each folder, especially under the "TO-DO" and run the files according to the orrder of the stages.
 
-## How to Run
-
-In each of the programs below, find the "TODOs", and change the appropriate variables as required. Then run the Bash
-file "runAllFiles.sh". Programs 1 needs to be run first, followed by 2 and then program 2.
+Otherwise, you can simply run the default settings that we use for the paper by running the Bash file "runAllFiles.sh"
 
 
-## Code Description
+## The Pipeline is organized into the following Stages:
+1. Download OONI(download_OONI folder): This program downloads the OONI datasets into your specified folder
+### Code Description
 
-1. ### Program 1, folder: download_OONI 
-This program downloads the OONI datasets into your preferred folder.
-#### download_OONI.py
+a) download_OONI.py
 This file downloads the OONI data of the country you want to specify for the time range you specify 
-TODO:
-- Specify the country code where you want to download from
-- Specify the date range that you want to download data from
-#### remove_unnecessary.py
+
+b) remove_unnecessary.py
 This file just remove random stuff that is generated during downloading process
 
 
