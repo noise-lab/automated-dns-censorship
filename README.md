@@ -10,8 +10,9 @@ Otherwise, you can simply run the default settings that we use for the paper by 
 
 
 ## The Pipeline is organized into the following Stages:
-1. Download OONI(download_OONI folder): This program downloads the OONI datasets into your specified folder
-### Code Description
+
+### 1. Download OONI
+(download_OONI folder): This program downloads the OONI datasets into your specified folder
 
 a) download_OONI.py
 This file downloads the OONI data of the country you want to specify for the time range you specify 
