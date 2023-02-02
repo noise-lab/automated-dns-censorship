@@ -7,182 +7,132 @@ from sklearn.ensemble import IsolationForest
 import datetime
 from xgboost import XGBClassifier
 import pickle
+from sklearn.model_selection import StratifiedKFold
+import os
 import glob
-from sklearn.feature_selection import VarianceThreshold
-import matplotlib.pyplot as plt
+import shap
+import csv
+
+#os.system("pip3 install shap")
+
+fn = "../data/train_validate_test/Seed0/X_CNclean_train.csv"
+df = pd.read_csv(fn)
 
 
-def compare_results(predict, actual):
-    tp = 0
-    tn = 0
-    fp = 0
-    fn = 0
-    for i in range(len(predict)):
-        p = predict[i]
-        a = actual[i]
-        if p==0:
-            if a ==0:
-                tn +=1
-            else:
-                fn+=1
-        else:
-            if a==1:
-                tp +=1
-            else:
-                fp+=1
-    return [tp,fp,tn,fn]
-def get_statistic(tp,fp,tn,fn):
-    tpr = 0
-    fpr = 0
-    tnr = 0
-    fnr = 0
-    if tp+fn>0:
-        tpr = tp/(tp+fn)
-        fnr = fn/(tp+fn)
-    if fp+tn>0:
-        fpr = fp/(fp+tn)
-        tnr = tn/(fp+tn)
-    accuracy = (tp+tn)/(tp+tn+fp+fn)
-    precision = 0
-    if tp+fp>0:
-        precision = tp/(tp+fp)
-    f1 = 0
-    if tp+fp+fn >0:
-        f1 = tp/(tp+(fp+fn)/2)
-    return tpr,fpr,tnr,fnr,accuracy,precision,f1
-
-def get_unsupervised_output(output):
-    converted_output = []
-    for i in output:
-        if i==-1:
-            converted_output.append(1)
-        else:
-            converted_output.append(0)
-    return converted_output
-################### for non temporal #############
-result_classifier = "IF"
-result_filename_end = "OONICN_test.csv"
-result_folder = "./Results/"+result_classifier + "/"
-# sub_folder="811/Seed2/"
+title_match = [col for col in df.columns if "title_match" in col]
+headers_match = [col for col in df.columns if "headers_match" in col]
+status_code_match = [col for col in df.columns if "status_code_match" in col]
+body_length_match = [col for col in df.columns if "body_length_match" in col]        
+http_experiment_failure = [col for col in df.columns if "http_experiment_failure" in col]        
+probe_asn = [col for col in df.columns if "probe_asn" in col]        
+probe_network_name = [col for col in df.columns if "probe_network_name" in col]             
+resolver_network_name = [col for col in df.columns if "resolver_network_name" in col]        
+resolver_asn = [col for col in df.columns if "resolver_asn" in col]        
+test_keys_asn = [col for col in df.columns if "test_keys_asn" in col]        
+test_keys_as_org_name = [col for col in df.columns if "test_keys_as_org_name" in col]                          
+             
+                        
+###### features that was not encoded, dont need to aggregated using shap ######
+non_features = ["dns_experiment_failure","dns_consistency",'test_runtime', 'measurement_start_time','test_start_time', 'body_proportion']
+####### features that were encoded, need to aggregate ###############
+list_aggregate = [test_keys_as_org_name,test_keys_asn,resolver_asn,resolver_network_name,probe_network_name,
+probe_asn,http_experiment_failure,body_length_match, status_code_match,headers_match, title_match ]
 
 
-data_filename = "./train_validate_test_data/V2/"+"X_"+result_filename_end
+def write_dict(dict_,filename):
+    # open file for writing, "w" is writing
+    w = csv.writer(open(filename, "w"))
 
-# data_filename = "./train_validate_test_data/"+sub_folder +"X_"+result_filename_end
+    # loop over dictionary keys and values
+    for key, val in dict_.items():
 
-data = pd.read_csv(data_filename)
-# print(data.columns)
-data = data.drop(columns = ["Unnamed: 0"])
-
-result_df = pd.read_csv(result_folder+"OONIresults_OONICN_test.csv")
-# print(result_df.columns)
-result_df = result_df.drop(columns = ["Unnamed: 0"])
-
-
-data_result = pd.concat([data, result_df], axis=1)
-print(data_result)
-
-################  this is for temporal ###############
-### concating the results and the data**************
-
-data_folder = "./train_validate_test_data/V2/Temporal/"
-################## change this line of code ################
-train_month_end = 12
-seed = "/Seed0"
-
-result_folder = "./Results/XGB/Temporal/"+str(train_month_end) +seed +"/"
-###############################################################
-for fn in glob.glob(result_folder+"*"):
-    print(fn)
-    filename_end = fn.split("/")[-1]
-    test_month = int(filename_end.split("test_month")[-1].split("_")[0])
-    data = pd.read_csv(data_folder+"CN_month_"+str(test_month)+".csv")
-    data= data.drop(columns = ["Unnamed: 0"])
-    result = pd.read_csv(fn)
-    result= result.drop(columns = ["Unnamed: 0"])
-    data_result = pd.concat([data,result],axis=1)
-    print(result_folder + "data_result"+filename_end)
-    data_result.to_csv(result_folder + "data_result"+filename_end)
+        # write every key and value to file
+        w.writerow([key, val])
+def aggregate(dict_):
+    count = 0
+    features = dict_["Features"]
+    importance = dict_["Importance"]
+    new_dict = {}
+    for i in range(len(features)):
+        new_dict[features[i]]=importance[i]
+    another_dict = {}
     
-folder = "./Results/IF/Temporal/"
-ls = []
+    for li in list_aggregate:
+        scores =0
+        for item in li:
+            count+=1
+            scores+=new_dict[item]
+        name = li[0][:-1]
+        another_dict[name]=scores
+    for name in non_features:
+        another_dict[name]=new_dict[name]
+    return another_dict
 
-TP = []
-FP = []
-TN = []
-FN = []
-TPR = []
-FPR = []
-TNR = []
-FNR = []
-ACC = []
-Precision = []
-F1 = []
-starttrain = []
-endtrain = []
-testmonth = []
+def get_importance(shap_values, feature_names):
 
-name = "OONI"
+    importance_dict = {}
+    
+    for index in range(0, shap_values.shape[1]):
+     
+        mean_absolute_value = np.mean(np.abs(shap_values[:,index]))
+        importance_dict[feature_names[index]] = mean_absolute_value
+    print(importance_dict)
+    sorted_features_list = sorted(importance_dict, key=importance_dict.__getitem__, reverse=True)
+    sorted_num_list = sorted(importance_dict.values(), reverse=True)
+    sorted_num_list = np.array(sorted_num_list)/sum(sorted_num_list)  # normalize weights 0 to 1
+    printout_dict = {"Features": sorted_features_list, "Importance": sorted_num_list}
+    aggregate_dict = aggregate(printout_dict)
+    return aggregate_dict
 
-for fn in glob.glob(folder+"*/*/"+name+"_aggregate.csv"):
-    df = pd.read_csv(fn)
-#     print(df.columns)
-    df = df.drop(columns = ["Unnamed: 0"])
-    ls.append(df)
-aggregate_all = pd.concat(ls)
-for start_train in aggregate_all["Start train"].unique():
-    df1 = aggregate_all[aggregate_all["Start train"]==start_train]
-    for end_train in df1["End train"].unique():
-        df2 = df1[df1["End train"]==end_train]
-        for test_month in df2["Test month"].unique():
-            df3 = df2[df2["Test month"]==test_month]
-            tp = sum(df3[name+" TP"])/df3.shape[0]
-            fp = sum(df3[name+" FP"])/df3.shape[0]
-            tn = sum(df3[name+" TN"])/df3.shape[0]
-            fn = sum(df3[name+" FN"])/df3.shape[0]
-            
-            tpr = sum(df3[name+" TPR"])/df3.shape[0]
-            fpr = sum(df3[name+" FPR"])/df3.shape[0]
-            tnr = sum(df3[name+" TNR"])/df3.shape[0]
-            fnr = sum(df3[name+" FNR"])/df3.shape[0]
-            
-            acc = sum(df3[name+" ACC"])/df3.shape[0]
-            precision = sum(df3[name+" Precision"])/df3.shape[0]
-            f1 = sum(df3[name+" F1"])/df3.shape[0]
-            st = list(df3["Start train"])[0]
-            et = list(df3["End train"])[0]
-            tm = list(df3["Test month"])[0]
-            
-            TP.append(tp)
-            FP.append(fp)
-            TN.append(tn)
-            FN.append(fn)
-            TPR.append(tpr)
-            FPR.append(fpr)
-            TNR.append(tnr)
-            FNR.append(fnr)
-            ACC.append(acc)
-            Precision.append(precision)
-            F1.append(f1)
-            starttrain.append(st)
-            endtrain.append(et)
-            testmonth.append(tm)
-df = pd.DataFrame()
-df[name+ ' TP'] = TP
-df[name+ ' FP'] = FP
-df[name+ ' TN'] = TN
-df[name+ ' FN'] = FN
-df[name+ ' TPR'] = TPR
-df[name+ ' FPR'] = FPR
-df[name+ ' TNR'] = TNR
-df[name+ ' FNR'] = FNR
+df = pd.read_csv(fn)
+drops = ""
 
-df[name+ ' ACC'] = ACC
-df[name+ ' Precisioin'] = Precision 
-df[name+ ' F1'] = F1
-df["Start train"] = starttrain
-df["End train"] = endtrain
-df["Test month"] = testmonth
-df
 
-df.to_csv(folder + name+"summary.csv")
+columns_to_drop2 = ["Unnamed: 0", "GFWatchblocking_truth_new","input","Domain","Index","blocking"]
+
+# #########################   TODO    #########################
+# ############ Modigy this to see which model you want to see the feature importance
+classifier = "XGB"
+Seed = 0
+################################################################
+
+
+
+model_folder = "../Best_Models/"+classifier+"/Seed"+str(Seed)+"/"
+validation_data_folder = "../data/train_validate_test/Seed"+str(Seed)+"/"
+
+for fn in glob.glob(model_folder+"*"):
+    y_column_name = "blocking"
+    validate_data = fn.split("/")[-1].split("_")[2]
+    if validate_data == "GFCN":
+        y_column_name = "GFWatchblocking_truth_new"
+        
+  
+    full_fn = validation_data_folder+"X_"+validate_data+"_validate.csv"
+    df =  pd.read_csv(full_fn)
+    X_val = df.drop(columns = columns_to_drop2)
+    y_val = df[y_column_name]
+    feature_names = list(X_val.columns)
+
+    X_val = X_val.to_numpy()
+    y_val = y_val.to_numpy()
+    
+    model = pickle.load(open(fn, 'rb'))
+    if classifier == "IF" or classifier=="OCSVM":
+        model.fit(X_val)
+        
+    else:
+
+        model.fit(X_val,y_val)
+    exp = shap.TreeExplainer(model)
+    shap_values = exp.shap_values(X_val)
+ 
+
+
+    importances_dict = get_importance(shap_values,feature_names)
+
+    feature_folder = "../Best_Models/"+classifier+"/Seed"+str(Seed)+"/"+ fn.split("/")[-1].split(".")[0]+"_feature_impt.csv"
+    
+    
+    write_dict(importances_dict,feature_folder)
+
