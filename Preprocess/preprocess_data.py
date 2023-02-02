@@ -10,29 +10,19 @@ import copy
 import pickle
 from sklearn.model_selection import train_test_split
 import numpy as np
+os.system("pip install -U scikit-learn")
 
-
-main_cols = ['input', 'measurement_start_time', 'probe_asn', 'probe_cc', 'probe_ip','probe_network_name','resolver_asn', "report_id","resolver_asn",'resolver_ip', 'resolver_network_name', "solftware_name",
-'test_name', 'test_runtime', 'test_start_time']
-
-special = {'test_keys':["dns_experiment_failure","dns_consistency","control_failure","http_experiment_failure","body_length_match","body_proportion","status_code_match","headers_match","title_match","accessible","blocking","x_status"]}
-
-special_special = {'test_keys':{"queries":{"answers":["asn","as_org_name", "ipv4"]}}}
-
-df_columns = main_cols.copy()
-df_columns = df_columns+special['test_keys']
-df_columns = df_columns+ ["test_keys_" + i for i in special_special['test_keys']["queries"]["answers"]]
-
-def process_string(string):
+def process_string(string): # convert string of digits to list of digits 
     return [int(i) for i in list(string)]
+
 def generate_dates(start_date, end_date):
     lst =  pd.date_range(start_date, end_date, freq='D')
-    
     list_date = []
     for i in range(len(lst)):
         list_date.append(lst[i].date().strftime("%Y-%m-%d"))
     return list_date
-def replace_nan(df, column):
+
+def replace_nan(df, column): # replace nan values with empty string for a column in a dataframe
     new_labels = []
     for val in df[column]:
         if pd.isna(val):
@@ -43,13 +33,11 @@ def replace_nan(df, column):
     return df
 def get_domainname(name):
     new_name = name.split("//")[-1]
-#     if new_name[:4]=="www.":
-#         new_name = new_name[4:]
     if "/" in new_name:
         new_name = new_name.split("/")[0]
     return new_name
 
-def relabel(df, col_name, base_cat):
+def relabel(df, col_name, base_cat): # relabel a binary value column in a dataframe
     new_label = []
     for i in df[col_name]:
         if i==base_cat:
@@ -58,56 +46,33 @@ def relabel(df, col_name, base_cat):
             new_label.append(1)
     df[col_name]=new_label
     return df
-def replace_nan(df, column):
-    new_labels = []
-    for val in df[column]:
-        if pd.isna(val):
-            new_labels.append("")
-        else:
-            new_labels.append(val)
-    df[column]=new_labels
-    return df
 
-
-
-
-
-
-
-###### Preprocess the data
-def add_zeros(string, string_length):
+def add_zeros(string, string_length): # padding zeros to make the string of fixed length
     padd_num = string_length - len(string)
     return "0"*padd_num+string
-def generate_dates(start_date, end_date):
-    lst =  pd.date_range(start_date, end_date, freq='D')
-    list_date = []
-    for i in range(len(lst)):
-        list_date.append(lst[i].date().strftime("%Y-%m-%d"))
-    return list_date
 
-def findNaN(df, column):
+def findNaN(df, column): # find the rows which has nan values in a column so that those rows can be removed later
     col = list(df[column])
     nan_rows = []
     for i in range(len(col)):
         if pd.isna(col[i]):
             nan_rows.append(i)
     return nan_rows
-def convert_measurement_starttime(time):
+def convert_measurement_starttime(time): # converting time to duration since the benchmark time
     converted_datetime = pd.to_datetime(time, format='%Y-%m-%d %H:%M:%S')
     benchmark = datetime.datetime(2021,7,1)
     difference = converted_datetime-benchmark
     return difference.total_seconds()
 
-
 def relabel_category(df, column):
-    df[column] = [str(val) for val in df[column]]
-    df = replace_nan(df,column)
-    unique_labels = list(df[column].unique())
+    df[column] = [str(val) for val in df[column]]# convert values of the columns into strings
+    df = replace_nan(df,column)# rreplace NaN values with empty string
+    unique_labels = list(df[column].unique()) # get unique values in the column
     ## sorting the labels
     unique_labels.sort()
     dict_label = {}
 
-    for i in range(len(unique_labels)):
+    for i in range(len(unique_labels)): # encode the unique values
         dict_label[unique_labels[i]]=i
     df[column]=[dict_label[val] for val in df[column]]
     
@@ -117,47 +82,38 @@ def relabel_category(df, column):
     ## return the relabeled dataframee as well as the new label
     return df, labels_df
 
-def replace_nan(df, column):
-    new_labels = []
-    for val in df[column]:
-        if pd.isna(val):
-            new_labels.append("")
-        else:
-            new_labels.append(val)
-    df[column]=new_labels
-    return df
 
 
 
-##### Loading data
 
 
-US = pd.read_csv("./data/V1/US_v1.csv") 
-US["Index"] = [i for i in range(US.shape[0])]
-print(US.columns)
+#############   TODO   #####################
+# This is to specify the name of files you want to preprocess
+filenameUS = "../data/UScombine_all_dates.csv"
+
+filenameCN = "../data/CNcombine_all_dates_GFlabelsadded.csv"
+#############################
+
+
+US = pd.read_csv(filenameUS)
+US["Index"]=[i for i in range(US.shape[0])]
+US = replace_nan(US,"blocking")
+US.to_csv("../data/US_v1.csv")
 
 
 
-dates = generate_dates('2021-07-01','2022-02-09')
-country = "CN"
-ls = []
-count = 0
-for date in dates:
-    filename = "/data/censorship/OONI/"+date+"/"+country+"/groundtruth_combined_new.csv"
-    if os.path.exists(filename):
-        count +=1
-        df = pd.read_csv(filename)
-        ls.append(df)
-CN = pd.concat(ls)
+
+CN = pd.read_csv(filenameCN)
 CN["Index"]=[i for i in range(CN.shape[0])]
 CN = replace_nan(CN,"blocking")
-CN.to_csv("./data/CN_v1.csv")
+CN.to_csv("../data/CN_v1.csv")
 
 
-
-CN["measurement_start_time"] = [convert_measurement_starttime(time) for time in 
+CN["measurement_start_time"] = [convert_measurement_starttime(time) for time in CN["measurement_start_time"]]
 CN["test_start_time"] = [convert_measurement_starttime(time) for time in CN["test_start_time"]]
 
+US["measurement_start_time"] = [convert_measurement_starttime(time) for time in US["measurement_start_time"]]
+US["test_start_time"] = [convert_measurement_starttime(time) for time in US["test_start_time"]]
 
 
 
@@ -218,6 +174,9 @@ for i in US['dns_consistency']:
         GFWatchblocking_truth.append(np.nan)
     else:
         GFWatchblocking_truth.append("Possible")
+        
+        
+#### we assume that US experience no national censorrship
 US["GFWatchblocking_truth_new"]= GFWatchblocking_truth
 US = replace_nan(US,"blocking")
 US = replace_nan(US,"GFWatchblocking_truth_new")
@@ -225,12 +184,12 @@ US = US[US["blocking"]=='False']
 US = US[US["GFWatchblocking_truth_new"]=='']
 
 
-US.to_csv("./data/US_v2_sanitized.csv")
-CN.to_csv("./data/CN_v2_sanitized.csv")
+US.to_csv("../data/US_v2_sanitized.csv")
+CN.to_csv("../data/CN_v2_sanitized.csv")
 
 
 US_sample = US.sample(frac=0.025, replace=True, random_state=1)
-US_sample.to_csv("./data/US_v2_sanitized_sample.csv")
+US_sample.to_csv("../data/US_v2_sanitized_sample.csv")
 
 columns_selected_test = ["Index","input","Domain",'measurement_start_time',"control_failure",
        'probe_asn','probe_network_name',
@@ -246,7 +205,7 @@ US_sample = US_sample[columns_selected_test]
 
 
 
-######### Processing the dataframes
+######### ENCODING CN AND US TOGETHER SO WE GET UNIVERSAL ENCODING BETWEEN 2 DATASET ######
 
 combined_USCN = pd.concat([CN,US_sample])
 http_failure = []
@@ -275,8 +234,8 @@ combined_USCN["dns_experiment_failure"] = dns_failure
 
 CN = combined_USCN.iloc[:CN.shape[0],:]
 US = combined_USCN.iloc[CN.shape[0]:,:]
-US.to_csv("US_v3_sampled.csv")
-CN.to_csv("CN_v3.csv")
+US.to_csv("../data/US_v3_sampled.csv")
+CN.to_csv("../data/CN_v3.csv")
 
 relabels_dict = {}
 columns_need_relabeling = ["probe_network_name","probe_asn","resolver_asn","resolver_network_name","status_code_match","headers_match",
@@ -285,9 +244,11 @@ columns_need_relabeling = ["probe_network_name","probe_asn","resolver_asn","reso
 for col in columns_need_relabeling:
     combined_USCN, labels_combined = relabel_category(combined_USCN,col)
     relabels_dict[col]=labels_combined
+if not os.path.exists("../data/Labels"):
+    os.system("mkdir ../data/Labels")
 for k in relabels_dict.keys():
     df = relabels_dict[k]
-    df.to_csv("./data/Labels/"+k+".csv")
+    df.to_csv("../data/Labels/"+k+".csv")
 
     
 continuous_variables = ['test_runtime','measurement_start_time','test_start_time','body_proportion']
@@ -309,8 +270,8 @@ for feature in cat_features:
 
         
         columns = [feature + str(i) for i in range(cols_num)]
-        print(columns)
-#         vals_split = [list(string) for string in values]  
+   
+        vals_split = [list(string) for string in values]  
 
         for i in range(cols_num):
             df[columns[i]] = [int(val[i]) for val in vals_split]
@@ -332,8 +293,11 @@ US_encoded["blocking"]=[str(item) for item in US_encoded["blocking"]]
 US_encoded = replace_nan(US_encoded,"GFWatchblocking_truth_new")
 US_encoded = relabel(US_encoded, "blocking","False")
 US_encoded = relabel(US_encoded, "GFWatchblocking_truth_new","")
-US_encoded.to_csv("US_v4_encoded.csv")
-CN_encoded.to_csv("CN_v4_encoded.csv")
+US_encoded.to_csv("../data/US_v4_encoded.csv")
+CN_encoded.to_csv("../data/CN_v4_encoded.csv")
+
+
+
 
 
 
