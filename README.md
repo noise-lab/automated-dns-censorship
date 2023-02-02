@@ -24,21 +24,20 @@ This file just remove random stuff that is generated during downloading process
 
 
 
-2. ### Program 2, folder: preprocess
-This program converts the JSON files into dataframes, extract relevant features and convert them into a dataframe that is ready for ML.
-#### extract2csv.py
-This file takes the OONI data downloaded for the country and the time range you specify, extract the relevant features and convert them to a dataframe for each day
-TODO:
-- Specify the country code 
-- Specify the date range that you want to use
-#### add_GFWatchlabel.py
+### 2. Preprocess and add GFWatch label
+(preprocess folderr)
+
+a) extract2csv.py
+This file converts the JSON files into dataframes, extract relevant features and convert them into a dataframe that is ready for ML.
+
+b) add_GFWatchlabel.py
 This file is used specifically for China(CN). For each probe, this file will check the domain name as well as the time when the probe is generated and check it against the GFWatch blocking rules to see whether it is censored according to the GFWatch. After that, it will add a column to the dataframe to report about this.
 TODO:
 - Specify the country code 
 - Specify the date range that you want to use
 - Specify the name of the files containing the probes and the name of the files where you want to store the new dataframe
-#### preprocess_data.py
-This file reformat each feature according to the right format, process them based on whether they are numerical or categorical.
+c) preprocess_data.py
+This file reformat, encode each feature according to the right format, process them based on whether they are numerical or categorical.
 
 3. ### Program 3, file: run_ML.py
 What test are included in this file?
