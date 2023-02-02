@@ -118,7 +118,8 @@ for date in dates:
     if not df is None:
         ls.append(df)
 final_df = pd.concat(ls)
-final_df.to_csv(folder_OONI_data +"combine_all_dates.csv")
+final_df.to_csv("../data/combine_all_dates.csv")
+    
     
 
 
