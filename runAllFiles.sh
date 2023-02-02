@@ -1,18 +1,27 @@
 #!/bin/bash
 
-## program 1
+## stage 1: download OONI
 
-python download_OONI.py
+python ./download_OONI/download_OONI.py #do that for both CN and US
 
-python remove_unnecessary.py
 
-## program 2
+## stage 2: preprocess data
 
-python extract2csv.py
+python ./Preprocess/extract2csv.py #do that for both CN and US
 
-python add_GFWatchlabel.py
+python ./Preprocess/add_GFWatchlabel.py #do that for CN only
 
-python preprocess_data.py
+python ./Prerprocess/preprocess_data.py
 
-## program 3
-run_ML.py
+## stage 3: split data
+python ./split_data/split_data.py
+
+## stage 4: get best model
+python ./get_best_model/get_best_model.py
+
+## stage 5: get output
+python ./get_ouput/get_output.py
+
+## stage6: analyze results
+python ./analyze_results/analyze_results.py
+python ./analyze_results/get_feature_importance.py
