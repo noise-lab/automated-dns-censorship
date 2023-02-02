@@ -32,42 +32,53 @@ def generate_dates(start_date, end_date):
 def convert_to_csv(filename):
     with gzip.open(filename, 'rb') as f:
         file_content = f.readlines() 
+    print(len(file_content))
     thelist =[]
     for i in range(len(file_content)):
         index = 0
         lst =["" for i in range(len(df_columns))]
         a = file_content[i].decode('UTF-8')
         dic = json.loads(a)
+        print(type(dic))
+  
+   
+        # # print(dic.keys())
 
         for col in main_cols:
             if col in dic.keys():
+             
                 lst[index] = dic[col]
             index+=1
-        test_keys = dic["test_keys"]
-        for col in special["test_keys"]:
-            if col in test_keys.keys():
-                lst[index] = test_keys[col]
-            index+=1
-        if "queries" in dic["test_keys"].keys():
-            
-            answers = dic["test_keys"]["queries"]#[0]["answers"][0]
+     
+        if "test_keys" in dic.keys():
+          
+            test_keys = dic["test_keys"]
+            if type(test_keys) is dict:
+                for col in special["test_keys"]:
+                    if col in test_keys.keys():
+                        lst[index] = test_keys[col]
+                    index+=1
+  
+                if "queries" in dic["test_keys"].keys():
+                    
+                    answers = dic["test_keys"]["queries"]#[0]["answers"][0]
 
-            if dic["test_keys"]["queries"] is not None:
-                for j in range(len(dic["test_keys"]["queries"])):
-                    answer = dic["test_keys"]["queries"][j]["answers"]
-                    if answer is not None:
-                        for t in range(len(answer)):
-                            sub_index=index
+                    if dic["test_keys"]["queries"] is not None:
+                        for j in range(len(dic["test_keys"]["queries"])):
+                            answer = dic["test_keys"]["queries"][j]["answers"]
+                            if answer is not None:
+                                for t in range(len(answer)):
+                                    sub_index=index
 
 
-                            ans = answer[t]
+                                    ans = answer[t]
 
-                            for col in special_special["test_keys"]["queries"]["answers"]:
-                                if col in ans.keys():
-                                    lst[sub_index] = str(ans[col])+ "_"
-                                sub_index+=1
-
-        thelist.append(lst)
+                                    for col in special_special["test_keys"]["queries"]["answers"]:
+                                        if col in ans.keys():
+                                            lst[sub_index] = str(ans[col])+ "_"
+                                        sub_index+=1
+               
+                thelist.append(lst)
     df = pd.DataFrame(data = thelist, columns = df_columns)
     
     ### columns need to be processed again
@@ -106,8 +117,16 @@ def combine_data_by_day(folder):
 
 
 
+
+
+
+
+
+
+
+
 #############   TODO #############
-folder_OONI_data = "../CN/webconnectivity/" # Specify the folder where you want to convert the data, change the country name for a different country
+folder_OONI_data = "../US/webconnectivity/" # Specify the folder where you want to convert the data, change the country name for a different country
 dates = generate_dates('2021-02-23','2021-02-24') # Specify the date range you want to convert the data, this include the last date
 ##############################
 ls = []
@@ -118,10 +137,6 @@ for date in dates:
     if not df is None:
         ls.append(df)
 final_df = pd.concat(ls)
-final_df.to_csv("../data/combine_all_dates.csv")
+print(final_df)
+final_df.to_csv("../data/UScombine_all_dates.csv")
     
-    
-
-
-
-
