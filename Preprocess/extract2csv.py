@@ -8,6 +8,8 @@ import os
 
 #### extracting from json files into dataframes #####
 
+
+############     these are the featues that we will extract from JSON files b###### 
 main_cols = ['input', 'measurement_start_time', 'probe_asn', 'probe_cc', 'probe_ip','probe_network_name','resolver_asn', "report_id","resolver_asn",'resolver_ip', 'resolver_network_name', "solftware_name",
 'test_name', 'test_runtime', 'test_start_time']
 
@@ -78,46 +80,47 @@ def convert_to_csv(filename):
 
     
     
-    folder = "/".join(filename.split("/")[:-1])
-    new_filename = filename.split("/")[-1].split(".")[0]
+    # folder = "/".join(filename.split("/")[:-1])
+    # new_filename = filename.split("/")[-1].split(".")[0]
 #     print(df)
 #     df.to_csv(folder+"/"+new_filename+".csv")
     return df
 
 
-def combine_data_by_day(day, country):
-    ls = []
-    for filename in glob.glob("/data/censorship/OONI/T/"+day+"/*/"+country+"/*.jsonl.gz"):
+def combine_data_by_day(folder):
+ 
+    for filename in glob.glob(folder+"/*.jsonl.gz"):
+        print(filename)
         df = convert_to_csv(filename)
         ls.append(df)
     if len(ls)>0:
         df = pd.concat(ls)
         print(df.shape)
-        if not os.path.isdir("/data/censorship/OONI/T/"+day+"/"+country):
-            cmd = "mkdir {0};".format("/data/censorship/OONI/T/"+day+"/"+country)
-            os.system(cmd)
 
-        df.to_csv("/data/censorship/OONI/T/"+day+"/"+country+"/combined.csv")
+        df.to_csv(folder+"/combined.csv")
         return df
     return None
-dates = generate_dates('2021-07-01','2022-02-09') #### changing this date range
-  
-country = "CN"
-ls = []
 
+
+
+
+
+
+#############   TODO #############
+folder_OONI_data = "../CN/webconnectivity/" # Specify the folder where you want to convert the data, change the country name for a different country
+dates = generate_dates('2021-02-23','2021-02-24') # Specify the date range you want to convert the data, this include the last date
+##############################
+ls = []
 for date in dates:
-    print(date)
-    df = combine_data_by_day(date, country)
+    print(folder_OONI_data + date)
+    df = combine_data_by_day(folder_OONI_data + date)
+    print(df.shape)
     if not df is None:
         ls.append(df)
 final_df = pd.concat(ls)
+final_df.to_csv(folder_OONI_data +"combine_all_dates.csv")
+    
 
-country = "US"
-ls = []
 
-for date in dates:
-    print(date)
-    df = combine_data_by_day(date, country)
-    if not df is None:
-        ls.append(df)
-final_df = pd.concat(ls)
+
+
