@@ -11,27 +11,30 @@ from sklearn.model_selection import StratifiedKFold
 import os
 import glob
 import shap
-fn = "./train_validate_test_data/V2/X_CNclean_train.csv"
-df = pd.read_csv(fn)
-for col in df.columns:
-    print(col)
 import csv
-title_match = ['title_match0', 'title_match1']
-headers_match = ['headers_match0','headers_match1']
-status_code_match = ['status_code_match0', 'status_code_match1']               
-body_length_match = ['body_length_match0', 'body_length_match1']                  
-http_experiment_failure = ['http_experiment_failure0', 'http_experiment_failure1',
-       'http_experiment_failure2', 'http_experiment_failure3',
-       'http_experiment_failure4', 'http_experiment_failure5',
-       ] 
-probe_asn = ["probe_asn0","probe_asn1","probe_asn2","probe_asn3","probe_asn4","probe_asn5","probe_asn6","probe_asn7","probe_asn8","probe_asn9"]
-probe_network_name = ["probe_network_name0","probe_network_name1","probe_network_name2","probe_network_name3","probe_network_name4","probe_network_name5","probe_network_name6","probe_network_name7","probe_network_name8"]
-resolver_network_name = ["resolver_network_name0","resolver_network_name1","resolver_network_name2","resolver_network_name3","resolver_network_name4","resolver_network_name5","resolver_network_name6","resolver_network_name7","resolver_network_name8"  ]
-resolver_asn = ["resolver_asn0","resolver_asn1","resolver_asn2","resolver_asn3","resolver_asn4","resolver_asn5","resolver_asn6","resolver_asn7","resolver_asn8"]
-test_keys_asn = ["test_keys_asn0","test_keys_asn1","test_keys_asn2","test_keys_asn3","test_keys_asn4","test_keys_asn5","test_keys_asn6","test_keys_asn7","test_keys_asn8","test_keys_asn9"]
-test_keys_as_org_name = ["test_keys_as_org_name0","test_keys_as_org_name1","test_keys_as_org_name2","test_keys_as_org_name3","test_keys_as_org_name4","test_keys_as_org_name5","test_keys_as_org_name6","test_keys_as_org_name7","test_keys_as_org_name8","test_keys_as_org_name9"]
-non_features = ["dns_experiment_failure","dns_consistency",'test_runtime', 'measurement_start_time','test_start_time', 'body_proportion']
 
+#os.system("pip3 install shap")
+
+fn = "../data/train_validate_test/Seed0/X_CNclean_train.csv"
+df = pd.read_csv(fn)
+
+
+title_match = [col for col in df.columns if "title_match" in col]
+headers_match = [col for col in df.columns if "headers_match" in col]
+status_code_match = [col for col in df.columns if "status_code_match" in col]
+body_length_match = [col for col in df.columns if "body_length_match" in col]        
+http_experiment_failure = [col for col in df.columns if "http_experiment_failure" in col]        
+probe_asn = [col for col in df.columns if "probe_asn" in col]        
+probe_network_name = [col for col in df.columns if "probe_network_name" in col]             
+resolver_network_name = [col for col in df.columns if "resolver_network_name" in col]        
+resolver_asn = [col for col in df.columns if "resolver_asn" in col]        
+test_keys_asn = [col for col in df.columns if "test_keys_asn" in col]        
+test_keys_as_org_name = [col for col in df.columns if "test_keys_as_org_name" in col]                          
+             
+                        
+###### features that was not encoded, dont need to aggregated using shap ######
+non_features = ["dns_experiment_failure","dns_consistency",'test_runtime', 'measurement_start_time','test_start_time', 'body_proportion']
+####### features that were encoded, need to aggregate ###############
 list_aggregate = [test_keys_as_org_name,test_keys_asn,resolver_asn,resolver_network_name,probe_network_name,
 probe_asn,http_experiment_failure,body_length_match, status_code_match,headers_match, title_match ]
 
@@ -69,76 +72,67 @@ def get_importance(shap_values, feature_names):
 
     importance_dict = {}
     
-    for index in range(0, len(shap_values[0])):
-        mean_absolute_value = np.mean(np.abs(shap_values[:][index]))
+    for index in range(0, shap_values.shape[1]):
+     
+        mean_absolute_value = np.mean(np.abs(shap_values[:,index]))
         importance_dict[feature_names[index]] = mean_absolute_value
+    print(importance_dict)
     sorted_features_list = sorted(importance_dict, key=importance_dict.__getitem__, reverse=True)
     sorted_num_list = sorted(importance_dict.values(), reverse=True)
     sorted_num_list = np.array(sorted_num_list)/sum(sorted_num_list)  # normalize weights 0 to 1
     printout_dict = {"Features": sorted_features_list, "Importance": sorted_num_list}
     aggregate_dict = aggregate(printout_dict)
     return aggregate_dict
-fn = "./train_validate_test_data/V2/X_CNclean_train.csv"
+
 df = pd.read_csv(fn)
 drops = ""
 
 
 columns_to_drop2 = ["Unnamed: 0", "GFWatchblocking_truth_new","input","Domain","Index","blocking"]
 
-if "m" in drops:
-    drops_list = drops_list+["measurement_start_time"]
-if "h" in drops:
-    drops_list = drops_list + ['http_experiment_failure0', 'http_experiment_failure1',
-   'http_experiment_failure2', 'http_experiment_failure3',
-   'http_experiment_failure4', 'http_experiment_failure5',
-   'http_experiment_failure6']
-if "t" in drops:
-    drops_list = drops_list + ["test_start_time"]
-
-
-X_val = df.drop(columns = columns_to_drop2)
-
-feature_names = list(X_val.columns)
-for col in feature_names:
-    print(col)
-X_val = X_val.to_numpy()
+# #########################   TODO    #########################
+# ############ Modigy this to see which model you want to see the feature importance
+classifier = "XGB"
+Seed = 0
+################################################################
 
 
 
-#############  for IF #############
-# model = IsolationForest(random_state=0, max_features = 30, contamination=0.001, n_estimators = 20)
-fn = "./train_validate_test_data/V2/X_CNclean_train.csv"
-df = pd.read_csv(fn)
-columns_to_drop2 = ["Unnamed: 0", "GFWatchblocking_truth_new","input","Domain","Index","blocking"]
-sample = df.drop(columns=columns_to_drop2)
-sample_ = np.array(sample)
+model_folder = "../Best_Models/"+classifier+"/Seed"+str(Seed)+"/"
+validation_data_folder = "../data/train_validate_test/Seed"+str(Seed)+"/"
 
-model_name = "./models/IF/CNclean_train_GF_val.sav"
-model = pickle.load(open(model_name, 'rb'))
-# model.fit(sample_)
-print(model)
-exp = shap.TreeExplainer(model)
-shap_values = exp.shap_values(sample)
-print(shap_values)
-print(len(shap_values))
+for fn in glob.glob(model_folder+"*"):
+    y_column_name = "blocking"
+    validate_data = fn.split("/")[-1].split("_")[2]
+    if validate_data == "GFCN":
+        y_column_name = "GFWatchblocking_truth_new"
+        
+  
+    full_fn = validation_data_folder+"X_"+validate_data+"_validate.csv"
+    df =  pd.read_csv(full_fn)
+    X_val = df.drop(columns = columns_to_drop2)
+    y_val = df[y_column_name]
+    feature_names = list(X_val.columns)
 
-dict_name = model_name.split("/")[-1].split(".")[0]
-importances_dict = get_importance(shap_values,feature_names)
-print(importances_dict)
-# write_dict(importances_dict,"./Results/XGB/"+dict_name+"_feature_impt.csv")
+    X_val = X_val.to_numpy()
+    y_val = y_val.to_numpy()
+    
+    model = pickle.load(open(fn, 'rb'))
+    if classifier == "IF" or classifier=="OCSVM":
+        model.fit(X_val)
+        
+    else:
 
-# importances_dict = get_importance(shap_values,feature_names)
-
-##############  for XGB ###########
-model = XGBClassifier(max_depth=4, n_estimators=15)
-model.fit(X_val,y_)
-exp = shap.TreeExplainer(model)
-shap_values = exp.shap_values(X_val)
-importance_dict = get_importance(shap_values,feature_names)
+        model.fit(X_val,y_val)
+    exp = shap.TreeExplainer(model)
+    shap_values = exp.shap_values(X_val)
+ 
 
 
-sorted_features_list = sorted(importance_dict, key=importance_dict.__getitem__, reverse=True)
-sorted_num_list = sorted(importance_dict.values(), reverse=True)
-sorted_num_list = np.array(sorted_num_list)/sum(sorted_num_list)  # normalize weights 0 to 1
-printout_dict = {"Features": sorted_features_list, "Importance": sorted_num_list}
-write_dict(printout_dict,"./models/XGB/feature_imp_GFCN.csv")
+    importances_dict = get_importance(shap_values,feature_names)
+
+    feature_folder = "../Best_Models/"+classifier+"/Seed"+str(Seed)+"/"+ fn.split("/")[-1].split(".")[0]+"_feature_impt.csv"
+    
+    
+    write_dict(importances_dict,feature_folder)
+
