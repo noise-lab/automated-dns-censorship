@@ -20,7 +20,7 @@ Note also that programs 3, 7, and 8 process only one country at a time. These pr
 re-run with different countries (including the US and China) in order to execute the full suite of tests in 
 programs 10 through 13.
 
-To reproducing results, it is recommended to use the already [preprocessed data](https://drive.google.com/drive/folders/1PdtlEwh3toehTZPSrw5VJNFVqxB6hH5h?usp=sharing)
+To reproduce results, it is recommended to use the already [preprocessed data](https://drive.google.com/drive/folders/1PdtlEwh3toehTZPSrw5VJNFVqxB6hH5h?usp=sharing)
 and start from program 7 by running the Bash file "runMLfiles.sh"
 This is because Satellite has deprecated the 'anomaly' labels from its raw
 records and preprocesing the raw data frame scratch can take an extensive amount of resources
