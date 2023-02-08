@@ -9,7 +9,9 @@ However, the original data is still available online from the [raw data](https:/
 
 ## How to Run
 
-In each of the programs below, find the "TODOs", and change the appropriate variables as required. Then run the Bash
+In each of the programs below, find the "TODOs", and change the appropriate variables as required.
+
+Then run the Bash
 file "runAllFiles.sh". Programs 1, 2, 3, and 4 need to be run in sequence, as do items 5 and 6 (both sequences can be
 run in parallel). Program 7 cannot run until programs 1 through 6 have completed. Programs 8 through 13 train and
 evaluate different machine learning models, and thus can be run in any order or concurrently. 
@@ -17,6 +19,19 @@ evaluate different machine learning models, and thus can be run in any order or 
 Note also that programs 3, 7, and 8 process only one country at a time. These programs will need to be
 re-run with different countries (including the US and China) in order to execute the full suite of tests in 
 programs 10 through 13.
+
+To reproducing results, it is recommended to use the already [preprocessed data](https://drive.google.com/drive/folders/1PdtlEwh3toehTZPSrw5VJNFVqxB6hH5h?usp=sharing)
+and start from program 7 by running the Bash file "runMLfiles.sh"
+This is because Satellite has deprecated the 'anomaly' labels from its raw
+records and preprocesing the raw data frame scratch can take an extensive amount of resources
+and time to complete. Download the preprocessed data and place the files in the home directory
+with the following structure:
+| File Paths| 
+| ----------- | 
+| ./home_directory/US/raw_dataframe.gzip| 
+| ./home_directory/CN/raw_dataframe.gzip| 
+| ./home_directory/CN/ /GFWatch_Combined_Dataset.gzip| 
+| ./home_directory/max_asn_aggregate.gzip| 
 
 Because of the significant length and memory use of these programs, we recommend using a
 20+ CPU machine with approximately 40 GB of RAM. No GPUs are required.
