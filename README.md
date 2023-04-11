@@ -48,7 +48,7 @@ This file reformat, encode each feature according to the right format, process t
 (get_best_model folder)
 
 a) get_best_model.py
-This file is used to get and store the best model for each combination of classifier, training and testing scenario. Please modify the name of classifier, training and testing scenario  and seed where the data was generated to get the desired best performing model
+This file is used to get and store the best model for each combination of classifier, training and testing scenario. Please modify the name of classifier, training and testing scenario  and seed where the data was generated to get the desired best performing model. Note that the script supports grid parameter search to yield the optimal model, users are encouraged to update the parameter search setting accordingly in the script as they see fit.
 
 ### 5. Get output from the stored model
 a) get_output.py
