@@ -5,4 +5,3 @@ This repository contains the code and link to the preprocessed datasets associat
 
 For ease of use, the associated code for each dataset (and the pointers to download the preprocssed datasets) is located in separate branches: [ooni-ml](https://github.com/noise-lab/automated-dns-censorship/tree/ooni-ml) for OONI and [satellite-ml](https://github.com/noise-lab/automated-dns-censorship/tree/satellite-ml) for Satellite.
 
-The preprocessed data for OONI is publicly available at [this link](https://drive.google.com/drive/folders/1ebmj1liu2i1bBxFh59vAdtTSsq1c7kzZ?usp=sharing)
