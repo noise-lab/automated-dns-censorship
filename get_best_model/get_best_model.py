@@ -76,6 +76,7 @@ def get_model_IF(contaminations):
 
 def get_model(model_name):
     models = []
+    #TO Change: Set grid search parameters.
     if model_name == "OCSVM":
         ###### OCSVM #####
 #         params={ "max_iter":[10,20,40]}
