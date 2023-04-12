@@ -98,8 +98,8 @@ Same functionality as above, except for the XGBOOST model.
 
 10. ### ml_harness_OCSVM_SGD.py
 This program trains, validates, and evaluates the One Class Support Vector Machine Single Gradient Descent
-(OCSVM_SGD) model on the provided datasets. ```Unlike the timeseries program, this script is meant for optimizing the
-parameter set (which can be updated and specified, see comments in the scripts)```.
+(OCSVM_SGD) model on the provided datasets. Unlike the timeseries program, this script is meant for optimizing the
+parameter set (which can be updated and specified, see comments in the scripts).
 This is accomplished by allowing multiple models to be trained and evaluated concurrently.
 
 11. ### ml_harness_XGBOOST.py
