@@ -147,8 +147,8 @@ present in each model. Below are the optimal hyperparameters for the "best" supe
 | XGBOOST    | 10      | cpu_predictor | 1         | gbtree  | 5.039304         | FALSE                       | 0.3 | 0     | 7         | 0.8              | 0              | 1         | 1                | 1      | 0     | hist        | binary:logistic | error       |
 
 | Model Name                            | nu   | fit_intercept | max_iter | tol   | shuffle | verbose | random_state | learning_rate | eta0 | power_t | warm_start | average |
-|---------------------------------------|------|---------------|----------|-------|---------|---------|--------------|---------------|------|---------|------------|---------|
-| OCSVM_SGD_skl_new_V5_dropped_features | 0.05 | TRUE          | 1000     | 0.001 | TRUE    | 1       | 23452345     | optimal       | 0    | 0.5     | FALSE      | FALSE   |
+|-----------|------|---------------|----------|-------|---------|---------|--------------|---------------|------|---------|------------|---------|
+| OCSVM_SGD | 0.05 | TRUE          | 1000     | 0.001 | TRUE    | 1       | 23452345     | optimal       | 0    | 0.5     | FALSE      | FALSE   |
 
 
 
