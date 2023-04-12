@@ -138,7 +138,7 @@ the machine learning models. The features are roughly analagous to the features 
 
 ## Hyperparamter Search
 
-The hyperparameters for the employed models were obtained using a grid search with manual intervention. 
+The hyperparameters for the employed models were obtained using a grid search with manual intervention to reduce the search time. 
 While this process is imperfect, it was ultimately necessary due to the high number of unrelated discrete and continuous hyperparameters
 present in each model. Below are the optimal hyperparameters for the "best" supervised and unsupervised models, respectively.
 
