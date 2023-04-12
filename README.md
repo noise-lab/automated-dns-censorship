@@ -136,3 +136,9 @@ The file "Dataset_Feature_Description" describes the dataset used for
 the machine learning models. The features are roughly analagous to the features present in the 
 [Censored Planet Satellite-v2.2 dataset](https://docs.censoredplanet.org/dns.html#satellite-v2-2).
 
+## Hyperparamter Search
+
+The hyperparameters for the employed models were obtained using a grid search with manual intervention. 
+While this process is imperfect, it was ultimately necessary due to the high number of unrelated discrete and continuous hyperparameters
+present in each model.
+
