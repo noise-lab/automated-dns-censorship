@@ -140,5 +140,15 @@ the machine learning models. The features are roughly analagous to the features 
 
 The hyperparameters for the employed models were obtained using a grid search with manual intervention. 
 While this process is imperfect, it was ultimately necessary due to the high number of unrelated discrete and continuous hyperparameters
-present in each model.
+present in each model. Below are the optimal hyperparameters for the "best" supervised and unsupervised models, respectively.
+
+| Model Name | nthread | predictor     | verbosity | booster | scale_pos_weight | disable_default_eval_metric | eta | gamma | max_depth | min_child_weight | max_delta_step | subsample | colsample_bytree | lambda | alpha | tree_method | objective       | eval_metric |
+|------------|---------|---------------|-----------|---------|------------------|-----------------------------|-----|-------|-----------|------------------|----------------|-----------|------------------|--------|-------|-------------|-----------------|-------------|
+| XGBOOST    | 10      | cpu_predictor | 1         | gbtree  | 5.039304         | FALSE                       | 0.3 | 0     | 7         | 0.8              | 0              | 1         | 1                | 1      | 0     | hist        | binary:logistic | error       |
+
+| Model Name                            | nu   | fit_intercept | max_iter | tol   | shuffle | verbose | random_state | learning_rate | eta0 | power_t | warm_start | average |
+|---------------------------------------|------|---------------|----------|-------|---------|---------|--------------|---------------|------|---------|------------|---------|
+| OCSVM_SGD_skl_new_V5_dropped_features | 0.05 | TRUE          | 1000     | 0.001 | TRUE    | 1       | 23452345     | optimal       | 0    | 0.5     | FALSE      | FALSE   |
+
+
 
