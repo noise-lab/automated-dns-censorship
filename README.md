@@ -2,8 +2,7 @@
 # DNS Censorship Detection with OONI
 
 ## Dataset
-The preprocessed data for OONI is publicly available at [this link](https://drive.google.com/drive/folders/1ebmj1liu2i1bBxFh59vAdtTSsq1c7kzZ?usp=sharing)
-
+The preprocessed data for OONI is publicly available at [this link](https://drive.google.com/file/d/16zOEtxHWmQD4LjzRiD-wZ93hldQ8FCBu/view?usp=sharing)
 
 ## Introduction
 This prroject try to use ML to detect censorship. This part of the process focus on using the measurements data from [OONI](https://ooni.org/post/mining-ooni-data), a platform that measure censorship by relying on volunteers located at differrent ventage points to run the probes. The 2 countrries that we investigate censorship for this prrroject is China (CN) and United States (US) during the period from 2021-07-01 to 2022-02-09 (inclusive). 
